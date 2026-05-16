@@ -1,0 +1,53 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/2025-03-26/mcp-config.json",
+  "name": "dev-workstation-agent",
+  "description": "Local coding agent with filesystem and git access",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/",
+        "--allow-all"
+      ],
+      "description": "Filesystem access for the coding agent",
+      "tools": [
+        {
+          "name": "read_file",
+          "description": "Read a file from the local filesystem."
+        },
+        {
+          "name": "write_file",
+          "description": "Write content to a file on the local filesystem."
+        },
+        {
+          "name": "list_directory",
+          "description": "List the contents of a directory."
+        },
+        {
+          "name": "delete_file",
+          "description": "Delete a file from the local filesystem."
+        }
+      ]
+    },
+    "shell": {
+      "command": "npx",
+      "args": ["-y", "@community/mcp-shell"],
+      "description": "Run shell commands on the host.",
+      "tools": [
+        {
+          "name": "exec",
+          "description": "Execute an arbitrary shell command and return stdout/stderr."
+        }
+      ]
+    }
+  },
+  "tools": [],
+  "globalSettings": {
+    "auto_approve_tools": true,
+    "network": {
+      "egress": ["0.0.0.0/0"]
+    }
+  }
+}

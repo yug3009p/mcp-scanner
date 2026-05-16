@@ -1,0 +1,102 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/2025-03-26/mcp-config.json",
+  "name": "secure-coding-agent",
+  "description": "Reference-quality MCP configuration that passes all seven scanners.",
+  "mcpServers": {
+    "workspace-fs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem@1.4.2",
+        "/srv/agent-workspace"
+      ],
+      "description": "Read-write access to the sandboxed agent workspace only.",
+      "auth": {
+        "type": "bearer",
+        "token_env": "WORKSPACE_FS_TOKEN"
+      },
+      "scopes": ["read", "write"],
+      "integrity": {
+        "sha256": "f3a1b9d4e2c6a8b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4"
+      },
+      "network": {
+        "egress": []
+      },
+      "tools": [
+        {
+          "name": "workspace_read_file",
+          "description": "Returns the UTF-8 contents of a file relative to the workspace root."
+        },
+        {
+          "name": "workspace_write_file",
+          "description": "Writes UTF-8 content to a file relative to the workspace root."
+        },
+        {
+          "name": "workspace_list_directory",
+          "description": "Returns directory entries relative to the workspace root."
+        }
+      ]
+    },
+    "github-api": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github@1.2.4"
+      ],
+      "description": "Issues and pull-request operations against a single repository.",
+      "auth": {
+        "type": "oauth2",
+        "token_env": "GITHUB_AGENT_TOKEN",
+        "scope_required": ["repo:read", "issues:write"]
+      },
+      "integrity": {
+        "sha256": "9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d"
+      },
+      "network": {
+        "egress": ["api.github.com"]
+      },
+      "tools": [
+        {
+          "name": "github_list_issues",
+          "description": "Returns a paginated list of issues for the configured repository."
+        },
+        {
+          "name": "github_create_issue",
+          "description": "Creates a new issue. Requires explicit user confirmation."
+        }
+      ]
+    },
+    "docs-search": {
+      "command": "uvx",
+      "args": ["mcp-server-docs@0.5.3"],
+      "description": "Read-only semantic search over the internal documentation index.",
+      "auth": {
+        "type": "bearer",
+        "token_env": "DOCS_SEARCH_TOKEN"
+      },
+      "integrity": {
+        "sha256": "1234abcd5678ef901234abcd5678ef901234abcd5678ef901234abcd5678ef90"
+      },
+      "network": {
+        "egress": ["docs-search.internal"]
+      },
+      "tools": [
+        {
+          "name": "docs_search",
+          "description": "Returns the top-k most relevant documentation snippets for a query."
+        }
+      ]
+    }
+  },
+  "globalSettings": {
+    "auto_approve_tools": false,
+    "require_user_confirmation_for": [
+      "github_create_issue",
+      "workspace_write_file"
+    ],
+    "audit_log": {
+      "enabled": true,
+      "destination": "stdout"
+    }
+  }
+}

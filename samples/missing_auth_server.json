@@ -1,0 +1,45 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/2025-03-26/mcp-config.json",
+  "name": "ops-automation-agent",
+  "description": "Operational automation — deploy, scale, page on-call",
+  "mcpServers": {
+    "k8s-cluster": {
+      "url": "http://k8s-mcp.internal.example.com:8080",
+      "transport": "http",
+      "description": "Cluster control plane MCP bridge.",
+      "tools": [
+        {"name": "deploy_service",   "description": "Deploy a service to the cluster."},
+        {"name": "delete_namespace", "description": "Delete a Kubernetes namespace and all its resources."},
+        {"name": "exec_in_pod",      "description": "Execute a command in a running pod."},
+        {"name": "scale_deployment", "description": "Scale a deployment to N replicas."}
+      ]
+    },
+    "payments-sandbox": {
+      "url": "https://payments-mcp.internal.example.com:8443/mcp",
+      "transport": "sse",
+      "description": "Payments service MCP bridge.",
+      "tools": [
+        {"name": "transfer",    "description": "Transfer funds between accounts."},
+        {"name": "refund",      "description": "Issue a refund."},
+        {"name": "charge_card", "description": "Charge a customer card."}
+      ]
+    },
+    "git-bot": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-github@1.2.0"],
+      "api_key": "your_github_token_here",
+      "tools": [
+        {"name": "git_push",  "description": "Push commits to remote."},
+        {"name": "merge_pr",  "description": "Merge a pull request."}
+      ]
+    },
+    "pagerduty": {
+      "url": "http://pd-mcp.internal:9000",
+      "transport": "websocket",
+      "description": "PagerDuty alerting bridge.",
+      "tools": [
+        {"name": "send_alert", "description": "Page the on-call engineer."}
+      ]
+    }
+  }
+}

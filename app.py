@@ -1533,7 +1533,7 @@ def render_footer() -> None:
   Powered by Llama 3.3 70B via Groq &nbsp;·&nbsp; Static scanners written in pure Python
   &nbsp;·&nbsp; Aligned to OWASP LLM Top 10 (2025) &amp; OWASP Agentic Top 10 (2025)
   &nbsp;·&nbsp; Built by
-  <a href="https://www.linkedin.com/in/yug-patel-b9727226b/" target="_blank">Yug Patel</a>
+  <a href="https://www.linkedin.com/in/yugpatel9409/" target="_blank">Yug Patel</a>
   &nbsp;·&nbsp;
   <a href="https://github.com/yug3009p" target="_blank">github.com/yug3009p</a>
 </div>

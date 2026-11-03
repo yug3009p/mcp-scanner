@@ -1,14 +1,14 @@
 # 🛡️ MCP-Scanner
 
 > **AI Agent Security Auditor** — paste an MCP server config, get a
-> CVSS-scored audit mapped to OWASP LLM Top 10 and OWASP Agentic Top 10.
+> CVSS-scored audit mapped to OWASP LLM Top 10 and the OWASP Top 10 for Agentic Applications.
 > Seven deterministic scanners, plus an optional LLM pass.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-llama--3.3--70b-F55036?style=flat-square)
+![Groq](https://img.shields.io/badge/Groq-gpt--oss--120b-F55036?style=flat-square)
 ![OWASP](https://img.shields.io/badge/OWASP-LLM%20Top%2010%20(2025)-000000?style=flat-square&logo=owasp&logoColor=white)
-![OWASP Agentic](https://img.shields.io/badge/OWASP-Agentic%20Top%2010%20(2025)-7C3AED?style=flat-square)
+![OWASP Agentic](https://img.shields.io/badge/OWASP-Agentic%20Top%2010%20(2026)-7C3AED?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-10B981?style=flat-square)
 
 ---
@@ -43,7 +43,7 @@ By 2026, the AI-agent attack surface has moved from a research curiosity to a pr
 
 The defensive primitives we depend on for traditional software — code review, dependency pinning, least-privilege, secret scanning — exist for AI agents in principle but are rarely applied because the configs *look* harmless. An MCP client config is a 30-line JSON file. Nobody runs `npm audit` on it. Nobody checks whether the filesystem MCP server has been pointed at `/`.
 
-**MCP-Scanner is `npm audit` for AI-agent configurations.** It treats every MCP server, tool definition, and system prompt as untrusted input and audits it against seven attack classes drawn from **OWASP LLM Top 10 (2025)** and **OWASP Agentic Top 10 (2025)**. Each finding ships with a CVSS 3.1 score, OWASP and CWE mappings, an attack scenario in plain English, and concrete remediation steps. Static rules are deterministic; an optional Llama 3.3 70B pass via Groq adds semantic detection of tool poisoning that regex alone misses.
+**MCP-Scanner is `npm audit` for AI-agent configurations.** It treats every MCP server, tool definition, and system prompt as untrusted input and audits it against seven attack classes drawn from **OWASP LLM Top 10 (2025)** and **OWASP Top 10 for Agentic Applications (2026)**. Each finding ships with a CVSS 3.1 score, OWASP and CWE mappings, an attack scenario in plain English, and concrete remediation steps. Static rules are deterministic; an optional LLM pass via Groq adds semantic detection of tool poisoning that regex alone misses.
 
 ---
 
@@ -52,12 +52,12 @@ The defensive primitives we depend on for traditional software — code review, 
 | Layer | Technology |
 |---|---|
 | UI | Streamlit |
-| LLM | Llama 3.3 70B Versatile (via Groq) |
+| LLM | `openai/gpt-oss-120b` via Groq by default; set `GROQ_MODEL` to use another Groq model |
 | SDK | `groq` Python SDK |
 | Schema validation | Pydantic 2 |
 | Static analysis | Pure Python (`re`, `math`, recursive JSON walk) |
 | Config | `python-dotenv` |
-| Standards | OWASP LLM Top 10 (2025), OWASP Agentic Top 10 (2025), CWE, CVSS 3.1 |
+| Standards | OWASP LLM Top 10 (2025), OWASP Top 10 for Agentic Applications (2026), CWE, CVSS 3.1 |
 | Language | Python 3.11+ |
 
 Measured on the six bundled sample configs (Windows laptop, Python 3.11), the seven static scanners take **1–5 ms per config**. The optional Groq pass adds network and model latency, which depends on the provider and is not measured here.
@@ -68,13 +68,13 @@ Measured on the six bundled sample configs (Windows laptop, Python 3.11), the se
 
 | # | Scanner | What it catches | OWASP mapping |
 |---|---|---|---|
-| 1 | **Prompt Injection Surfaces** | Untrusted-input fields, override directives ("ignore previous instructions"), role-hijack tokens, chat-template smuggling | LLM01:2025 · AAI01:2025 |
-| 2 | **Tool Poisoning** | Imperative verbs aimed at the model inside tool descriptions, sensitive-target references (`~/.ssh`, `/etc/passwd`, env vars), zero-width / BIDI control characters, abnormally long descriptions | LLM01:2025 (Indirect) · AAI04:2025 |
-| 3 | **Overly Broad Permissions** | Filesystem roots like `/`, `C:\`, `$HOME`; `0.0.0.0/0` egress; shell-exec primitives; missing path restrictions on filesystem servers | LLM06:2025 · AAI03:2025 |
-| 4 | **Hardcoded Secrets** | Tight regex for AWS, GitHub, Slack, Stripe, OpenAI, Anthropic, Groq, npm, Twilio, SendGrid, JWTs, DB URLs — plus a Shannon-entropy gate for custom credentials in `*_key` / `*_secret` fields | LLM02:2025 · AAI07:2025 |
-| 5 | **Unverified Server Sources** | Unpinned package versions, untrusted publishers, HTTP-only origins, known exfiltration hosts (requestbin, webhook.site), curl-to-shell patterns | LLM03:2025 · AAI06:2025 |
-| 6 | **Cross-Tool Shadowing** | Identical tool names across servers, case/separator collisions, near-duplicates within edit distance 2 — with extra weight for high-impact names (`read_file`, `exec`, `send_email`) | LLM06:2025 · AAI04:2025 |
-| 7 | **Missing Authentication** | State-changing tools with no `auth` block, remote-exposed servers accepting anonymous calls, placeholder credentials (`your_token_here`, `changeme`) | LLM06:2025 · AAI05:2025 |
+| 1 | **Prompt Injection Surfaces** | Untrusted-input fields, override directives ("ignore previous instructions"), role-hijack tokens, chat-template smuggling | LLM01:2025 · ASI01 |
+| 2 | **Tool Poisoning** | Imperative verbs aimed at the model inside tool descriptions, sensitive-target references (`~/.ssh`, `/etc/passwd`, env vars), zero-width / BIDI control characters, abnormally long descriptions | LLM01:2025 (Indirect) · ASI04 |
+| 3 | **Overly Broad Permissions** | Filesystem roots like `/`, `C:\`, `$HOME`; `0.0.0.0/0` egress; shell-exec primitives; missing path restrictions on filesystem servers | LLM06:2025 · ASI03 / ASI02 / ASI05 |
+| 4 | **Hardcoded Secrets** | Tight regex for AWS, GitHub, Slack, Stripe, OpenAI, Anthropic, Groq, npm, Twilio, SendGrid, JWTs, DB URLs — plus a Shannon-entropy gate for custom credentials in `*_key` / `*_secret` fields | LLM02:2025 · ASI03 |
+| 5 | **Unverified Server Sources** | Unpinned package versions, untrusted publishers, HTTP-only origins, known exfiltration hosts (requestbin, webhook.site), curl-to-shell patterns | LLM03:2025 · ASI04 |
+| 6 | **Cross-Tool Shadowing** | Identical tool names across servers, case/separator collisions, near-duplicates within edit distance 2 — with extra weight for high-impact names (`read_file`, `exec`, `send_email`) | LLM06:2025 · ASI02 |
+| 7 | **Missing Authentication** | State-changing tools with no `auth` block, remote-exposed servers accepting anonymous calls, placeholder credentials (`your_token_here`, `changeme`) | LLM06:2025 · ASI03 |
 
 Each finding includes: severity band, CVSS 3.1 base score + vector string, OWASP LLM mapping, OWASP Agentic mapping, CWE reference, the exact JSON path of the affected component, an attack scenario, and a numbered remediation list.
 
@@ -144,7 +144,7 @@ Load `samples/poisoned_tool_desc.json` (a community "weather" MCP server with a 
   "cvss_score": 9.6,
   "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N",
   "owasp_llm": "LLM01:2025 — Prompt Injection (Indirect)",
-  "owasp_agentic": "AAI04:2025 — Tool Misuse / Poisoned Tool Description",
+  "owasp_agentic": "ASI04:2026 — Agentic Supply Chain Vulnerabilities",
   "cwe": "CWE-77: Improper Neutralization of Special Elements in a Command",
   "category": "Tool Poisoning",
   "component": "mcpServers.weather.tools[0].description",
@@ -177,16 +177,17 @@ The same config also triggers a separate finding for `get_forecast` (system-prom
 | LLM06:2025 | Excessive Agency | Overly Broad Permissions, Cross-Tool Shadowing, Missing Auth |
 | LLM07:2025 | System Prompt Leakage | Tool Poisoning (LLM-assisted detection) |
 
-### OWASP Agentic AI Top 10 (2025) coverage
+### OWASP Top 10 for Agentic Applications (2026) coverage
 
 | Agentic ID | Title | Scanner(s) |
 |---|---|---|
-| AAI01:2025 | Memory Poisoning / Instruction Hijack | Prompt Injection Surfaces |
-| AAI03:2025 | Privilege Compromise | Overly Broad Permissions |
-| AAI04:2025 | Tool Misuse | Tool Poisoning, Cross-Tool Shadowing |
-| AAI05:2025 | Cascading Failures | Missing Authentication |
-| AAI06:2025 | Supply-Chain Compromise | Unverified Server Sources |
-| AAI07:2025 | Identity / Credential Compromise | Hardcoded Secrets |
+| ASI01 | Agent Goal Hijack | Prompt Injection Surfaces |
+| ASI02 | Tool Misuse and Exploitation | Cross-Tool Shadowing, Overly Broad Permissions (network egress) |
+| ASI03 | Identity and Privilege Abuse | Hardcoded Secrets, Missing Authentication, Overly Broad Permissions (filesystem) |
+| ASI04 | Agentic Supply Chain Vulnerabilities | Tool Poisoning, Unverified Server Sources |
+| ASI05 | Unexpected Code Execution | Overly Broad Permissions (shell execution) |
+
+Earlier versions used `AAI` codes that are not part of the published OWASP list; findings now use the official ASI codes, and a test enforces it. ASI06 to ASI10 (memory poisoning, inter-agent communication, cascading failures, human trust, rogue agents) are runtime behaviours a static config scan cannot observe.
 
 ### CWE references
 

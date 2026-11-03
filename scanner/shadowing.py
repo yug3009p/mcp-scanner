@@ -4,7 +4,7 @@ When two MCP servers expose tools with the same (or near-identical) names,
 the agent's tool router becomes non-deterministic. An attacker who controls
 one server can shadow a trusted tool — the agent may dispatch a `read_file`
 call to a poisoned server instead of the legitimate one. Tracked under
-OWASP Agentic AAI04 (Tool Misuse) and AAI10 (Overreliance on Agent Output).
+OWASP Agentic ASI02 (Tool Misuse and Exploitation).
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from collections import defaultdict
 from typing import Any
 
 from scanner.cvss import cvss_for_profile
+from scanner.ids import stable_hash
 
 # Tool names that, if shadowed, give an attacker maximum leverage
 _HIGH_VALUE_NAMES = {
@@ -104,7 +105,7 @@ def scan_shadowing(config: dict) -> list[dict[str, Any]]:
         cvss = cvss_for_profile("tool_shadowing")
         names_shown = sorted({t for _, t, _ in occurrences})
         findings.append({
-            "id": f"MCP-SHADOW-{abs(hash(norm)) % 10000:04d}",
+            "id": f"MCP-SHADOW-{stable_hash(norm):04d}",
             "scanner": "shadowing",
             "category": "Cross-Tool Shadowing",
             "title": f"Tool name `{names_shown[0]}` exposed by {len(servers_involved)} servers",
@@ -112,7 +113,7 @@ def scan_shadowing(config: dict) -> list[dict[str, Any]]:
             "cvss_score": 8.7 if is_high_value else 7.1,
             "cvss_vector": cvss.vector,
             "owasp_llm": "LLM06:2025 — Excessive Agency",
-            "owasp_agentic": "AAI04:2025 — Tool Misuse via Shadowing",
+            "owasp_agentic": "ASI02:2026 — Tool Misuse and Exploitation",
             "cwe": "CWE-1023: Incomplete Comparison with Missing Factors",
             "component": ", ".join(loc for _, _, loc in occurrences),
             "evidence": (
@@ -160,7 +161,7 @@ def scan_shadowing(config: dict) -> list[dict[str, Any]]:
                     continue
                 seen_pairs.add(key)
                 findings.append({
-                    "id": f"MCP-SHADOW-TYPO-{abs(hash(str(key))) % 10000:04d}",
+                    "id": f"MCP-SHADOW-TYPO-{stable_hash(str(key)):04d}",
                     "scanner": "shadowing",
                     "category": "Cross-Tool Shadowing",
                     "title": f"Near-duplicate tool names `{t1}` / `{t2}` across servers",
@@ -168,7 +169,7 @@ def scan_shadowing(config: dict) -> list[dict[str, Any]]:
                     "cvss_score": 5.7,
                     "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:N",
                     "owasp_llm": "LLM06:2025 — Excessive Agency",
-                    "owasp_agentic": "AAI04:2025 — Tool Misuse via Shadowing",
+                    "owasp_agentic": "ASI02:2026 — Tool Misuse and Exploitation",
                     "cwe": "CWE-1023",
                     "component": f"{s1}:{t1} <> {s2}:{t2}",
                     "evidence": f"levenshtein distance = {dist}",

@@ -2,7 +2,7 @@
 
 Flags MCP servers exposing dangerous tools without any authentication,
 scope restriction, or rate limit. Maps to OWASP LLM06:2025 (Excessive
-Agency), OWASP Agentic AAI05 (Cascading Failures), and CWE-306 (Missing
+Agency), OWASP Agentic ASI03 (Identity and Privilege Abuse), and CWE-306 (Missing
 Authentication for Critical Function).
 """
 
@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from scanner.cvss import cvss_for_profile
+from scanner.ids import stable_hash
 
 # Tool name fragments that imply a state-changing or sensitive operation
 _DANGEROUS_TOOL_HINTS = [
@@ -111,7 +112,7 @@ def scan_authentication(config: dict) -> list[dict[str, Any]]:
             cvss = cvss_for_profile("missing_auth")
             tool_names = ", ".join(n for n, _ in dangerous_tools[:5])
             findings.append({
-                "id": f"MCP-AUTH-{abs(hash(server_name)) % 10000:04d}",
+                "id": f"MCP-AUTH-{stable_hash(server_name):04d}",
                 "scanner": "auth_scanner",
                 "category": "Missing Authentication",
                 "title": f"Server `{server_name}` exposes write/exec tools with no auth",
@@ -119,7 +120,7 @@ def scan_authentication(config: dict) -> list[dict[str, Any]]:
                 "cvss_score": cvss.base_score,
                 "cvss_vector": cvss.vector,
                 "owasp_llm": "LLM06:2025 — Excessive Agency",
-                "owasp_agentic": "AAI05:2025 — Cascading Failures / Trust Boundary Violation",
+                "owasp_agentic": "ASI03:2026 — Identity and Privilege Abuse",
                 "cwe": "CWE-306: Missing Authentication for Critical Function",
                 "component": f"mcpServers.{server_name}",
                 "evidence": f"State-changing tools without auth: {tool_names}",
@@ -144,7 +145,7 @@ def scan_authentication(config: dict) -> list[dict[str, Any]]:
         if is_remote and not has_auth:
             cvss = cvss_for_profile("missing_auth")
             findings.append({
-                "id": f"MCP-AUTH-REMOTE-{abs(hash(server_name)) % 10000:04d}",
+                "id": f"MCP-AUTH-REMOTE-{stable_hash(server_name):04d}",
                 "scanner": "auth_scanner",
                 "category": "Missing Authentication",
                 "title": f"Remote server `{server_name}` accepts unauthenticated connections",
@@ -152,7 +153,7 @@ def scan_authentication(config: dict) -> list[dict[str, Any]]:
                 "cvss_score": min(cvss.base_score, 8.2),
                 "cvss_vector": cvss.vector,
                 "owasp_llm": "LLM06:2025 — Excessive Agency",
-                "owasp_agentic": "AAI05:2025 — Cascading Failures",
+                "owasp_agentic": "ASI03:2026 — Identity and Privilege Abuse",
                 "cwe": "CWE-306",
                 "component": f"mcpServers.{server_name}",
                 "evidence": f"transport={server.get('transport')} url={server.get('url')}",
@@ -180,7 +181,7 @@ def scan_authentication(config: dict) -> list[dict[str, Any]]:
                 or "your_" in val.lower()
             ):
                 findings.append({
-                    "id": f"MCP-AUTH-PLACE-{abs(hash(server_name + field)) % 10000:04d}",
+                    "id": f"MCP-AUTH-PLACE-{stable_hash(server_name + field):04d}",
                     "scanner": "auth_scanner",
                     "category": "Missing Authentication",
                     "title": f"`{server_name}.{field}` is a placeholder value",
@@ -188,7 +189,7 @@ def scan_authentication(config: dict) -> list[dict[str, Any]]:
                     "cvss_score": 5.9,
                     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
                     "owasp_llm": "LLM06:2025 — Excessive Agency",
-                    "owasp_agentic": "AAI05:2025 — Cascading Failures",
+                    "owasp_agentic": "ASI03:2026 — Identity and Privilege Abuse",
                     "cwe": "CWE-1188: Insecure Default Initialization of Resource",
                     "component": f"mcpServers.{server_name}.{field}",
                     "evidence": f"{field}={val}",

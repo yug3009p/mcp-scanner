@@ -2,7 +2,7 @@
 
 Flags filesystem mounts, network egress rules, and command allow-lists that
 grant the MCP server materially more access than a typical workflow requires.
-Mapped to OWASP LLM06:2025 (Excessive Agency) and OWASP Agentic AAI03
+Mapped to OWASP LLM06:2025 (Excessive Agency) and OWASP Agentic ASI03 / ASI02 / ASI05
 (Privilege Compromise).
 """
 
@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 from scanner.cvss import cvss_for_profile
+from scanner.ids import stable_hash
 
 # Filesystem roots that should never be exposed wholesale
 _DANGEROUS_FS_ROOTS = [
@@ -88,7 +89,7 @@ def _check_filesystem(server_name: str, server: dict, findings: list[dict[str, A
     if paths_seen:
         cvss = cvss_for_profile("broad_filesystem")
         findings.append({
-            "id": f"MCP-PERM-FS-{abs(hash(server_name)) % 10000:04d}",
+            "id": f"MCP-PERM-FS-{stable_hash(server_name):04d}",
             "scanner": "permissions",
             "category": "Overly Broad Permissions",
             "title": f"Server `{server_name}` exposes filesystem root(s) {', '.join(paths_seen[:3])}",
@@ -96,7 +97,7 @@ def _check_filesystem(server_name: str, server: dict, findings: list[dict[str, A
             "cvss_score": cvss.base_score,
             "cvss_vector": cvss.vector,
             "owasp_llm": "LLM06:2025 — Excessive Agency",
-            "owasp_agentic": "AAI03:2025 — Privilege Compromise",
+            "owasp_agentic": "ASI03:2026 — Identity and Privilege Abuse",
             "cwe": "CWE-732: Incorrect Permission Assignment for Critical Resource",
             "component": f"mcpServers.{server_name}.args",
             "evidence": ", ".join(paths_seen),
@@ -122,7 +123,7 @@ def _check_filesystem(server_name: str, server: dict, findings: list[dict[str, A
     if is_fs and not args:
         cvss = cvss_for_profile("broad_filesystem")
         findings.append({
-            "id": f"MCP-PERM-FS-{abs(hash(server_name + 'noarg')) % 10000:04d}",
+            "id": f"MCP-PERM-FS-{stable_hash(server_name + 'noarg'):04d}",
             "scanner": "permissions",
             "category": "Overly Broad Permissions",
             "title": f"Filesystem server `{server_name}` has no path restrictions",
@@ -130,7 +131,7 @@ def _check_filesystem(server_name: str, server: dict, findings: list[dict[str, A
             "cvss_score": min(cvss.base_score, 8.4),
             "cvss_vector": cvss.vector,
             "owasp_llm": "LLM06:2025 — Excessive Agency",
-            "owasp_agentic": "AAI03:2025 — Privilege Compromise",
+            "owasp_agentic": "ASI03:2026 — Identity and Privilege Abuse",
             "cwe": "CWE-732",
             "component": f"mcpServers.{server_name}",
             "evidence": "args list empty or missing",
@@ -172,7 +173,7 @@ def _check_network(server_name: str, server: dict, findings: list[dict[str, Any]
     if hits:
         cvss = cvss_for_profile("broad_network")
         findings.append({
-            "id": f"MCP-PERM-NET-{abs(hash(server_name)) % 10000:04d}",
+            "id": f"MCP-PERM-NET-{stable_hash(server_name):04d}",
             "scanner": "permissions",
             "category": "Overly Broad Permissions",
             "title": f"Server `{server_name}` permits unrestricted network egress",
@@ -180,7 +181,7 @@ def _check_network(server_name: str, server: dict, findings: list[dict[str, Any]
             "cvss_score": cvss.base_score,
             "cvss_vector": cvss.vector,
             "owasp_llm": "LLM06:2025 — Excessive Agency",
-            "owasp_agentic": "AAI03:2025 — Privilege Compromise",
+            "owasp_agentic": "ASI02:2026 — Tool Misuse and Exploitation",
             "cwe": "CWE-918: Server-Side Request Forgery",
             "component": f"mcpServers.{server_name}.egress",
             "evidence": ", ".join(f"{e} ({l})" for e, l in hits),
@@ -227,7 +228,7 @@ def _check_shell(server_name: str, server: dict, findings: list[dict[str, Any]])
     if shell_evidence:
         cvss = cvss_for_profile("remote_code_execution")
         findings.append({
-            "id": f"MCP-PERM-EXEC-{abs(hash(server_name)) % 10000:04d}",
+            "id": f"MCP-PERM-EXEC-{stable_hash(server_name):04d}",
             "scanner": "permissions",
             "category": "Overly Broad Permissions",
             "title": f"Server `{server_name}` exposes arbitrary command execution",
@@ -235,7 +236,7 @@ def _check_shell(server_name: str, server: dict, findings: list[dict[str, Any]])
             "cvss_score": cvss.base_score,
             "cvss_vector": cvss.vector,
             "owasp_llm": "LLM06:2025 — Excessive Agency",
-            "owasp_agentic": "AAI03:2025 — Privilege Compromise",
+            "owasp_agentic": "ASI05:2026 — Unexpected Code Execution",
             "cwe": "CWE-78: OS Command Injection",
             "component": f"mcpServers.{server_name}",
             "evidence": "; ".join(shell_evidence),

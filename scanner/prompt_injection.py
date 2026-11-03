@@ -2,7 +2,7 @@
 
 Identifies fields and patterns in an MCP configuration where untrusted
 external input flows into LLM context — the foundational class of attack
-described in OWASP LLM01:2025 (Prompt Injection) and OWASP Agentic AAI01.
+described in OWASP LLM01:2025 (Prompt Injection) and OWASP Agentic ASI01 (Agent Goal Hijack).
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import re
 from typing import Any
 
 from scanner.cvss import cvss_for_profile
+from scanner.ids import stable_hash
 
 # Patterns associated with prompt-injection attempts already baked into a config.
 # These are paraphrased from real PI payloads catalogued in OWASP and academic
@@ -67,7 +68,7 @@ def _flag_text(text: str, location: str) -> list[dict[str, Any]]:
         if match:
             cvss = cvss_for_profile("prompt_injection")
             findings.append({
-                "id": f"MCP-PI-{abs(hash(location + pattern)) % 10000:04d}",
+                "id": f"MCP-PI-{stable_hash(location + pattern):04d}",
                 "scanner": "prompt_injection",
                 "category": "Prompt Injection Surface",
                 "title": f"{label} detected in {location}",
@@ -75,7 +76,7 @@ def _flag_text(text: str, location: str) -> list[dict[str, Any]]:
                 "cvss_score": cvss.base_score,
                 "cvss_vector": cvss.vector,
                 "owasp_llm": "LLM01:2025 — Prompt Injection",
-                "owasp_agentic": "AAI01:2025 — Memory Poisoning / Instruction Hijack",
+                "owasp_agentic": "ASI01:2026 — Agent Goal Hijack",
                 "cwe": "CWE-1427: Improper Neutralization of Input in LLM Prompts",
                 "component": location,
                 "evidence": match.group(0),
@@ -153,7 +154,7 @@ def _flag_untrusted_sources(config: dict, findings: list[dict[str, Any]]) -> Non
         if hits:
             cvss = cvss_for_profile("prompt_injection")
             findings.append({
-                "id": f"MCP-PI-SRC-{abs(hash(server_name)) % 10000:04d}",
+                "id": f"MCP-PI-SRC-{stable_hash(server_name):04d}",
                 "scanner": "prompt_injection",
                 "category": "Prompt Injection Surface",
                 "title": f"Untrusted-input source `{server_name}` lacks isolation guard",
@@ -161,7 +162,7 @@ def _flag_untrusted_sources(config: dict, findings: list[dict[str, Any]]) -> Non
                 "cvss_score": min(cvss.base_score, 6.4),
                 "cvss_vector": cvss.vector,
                 "owasp_llm": "LLM01:2025 — Prompt Injection",
-                "owasp_agentic": "AAI01:2025 — Instruction Hijack via External Data",
+                "owasp_agentic": "ASI01:2026 — Agent Goal Hijack",
                 "cwe": "CWE-1426: Improper Validation of Generative AI Output",
                 "component": f"mcpServers.{server_name}",
                 "evidence": ", ".join(hits),

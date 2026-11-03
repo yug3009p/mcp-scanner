@@ -128,9 +128,7 @@ def _make_finding(
             "Anyone with read access to the config — including the LLM "
             "itself once the file is loaded into context — obtains the "
             "credential. If the config is committed to git or shared in a "
-            "support ticket, the secret is permanently leaked. Recent "
-            "incidents (CVE-2025-32711 EchoLeak, Slack-MCP leaks of Q1 "
-            "2025) all originated in this exact pattern."
+            "support ticket, the secret is permanently leaked."
         ),
         "remediation": [
             "Remove the hardcoded value and reference an environment variable instead (e.g., `${API_KEY}`).",
@@ -198,3 +196,39 @@ def scan_secrets(config: dict) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     _walk(config, "", findings)
     return findings
+
+
+REDACTED = "[REDACTED]"
+
+# Redaction is deliberately broader than detection: before data leaves the machine, it is
+# better to hide a harmless value than to send a real one. No word boundaries, so keys such
+# as PGPASSWORD or GITHUB_TOKEN match.
+_REDACT_KEY_NAMES = re.compile(
+    r"(?i)(api[_\-]?key|access[_\-]?key|secret|passw|pwd|token|auth|credential|"
+    r"private[_\-]?key|encryption[_\-]?key|database[_\-]?url|connection[_\-]?string)"
+)
+_ENV_VAR_NAME = re.compile(r"[A-Z][A-Z0-9_]*")  # e.g. "WEATHER_API_TOKEN": a name, not a secret
+
+
+def _redact_value(key_name: str, value: str) -> str:
+    """Return `value` with known secret patterns, and values under secret-like keys, hidden."""
+    for _, pattern, _ in _KNOWN_PATTERNS:
+        value = pattern.sub(REDACTED, value)
+    if (
+        _REDACT_KEY_NAMES.search(key_name)
+        and not _is_placeholder(value)
+        and not _ENV_VAR_NAME.fullmatch(value)
+    ):
+        return REDACTED
+    return value
+
+
+def redact_secrets(node: Any, key_name: str = "") -> Any:
+    """Copy of a config with every detected secret replaced, safe to send to an LLM API."""
+    if isinstance(node, dict):
+        return {k: redact_secrets(v, k) for k, v in node.items()}
+    if isinstance(node, list):
+        return [redact_secrets(v) for v in node]
+    if isinstance(node, str):
+        return _redact_value(key_name, node)
+    return node

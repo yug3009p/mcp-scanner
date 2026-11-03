@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -38,8 +37,8 @@ from scanner import (
     scan_shadowing,
     scan_sources,
     scan_tool_poisoning,
-    severity_from_score,
 )
+from scanner.secrets_scanner import redact_secrets
 
 load_dotenv()
 
@@ -230,9 +229,10 @@ def enrich_with_llm(
             {k: v for k, v in f.items() if k in {"id", "title", "severity", "category", "component", "evidence"}}
             for f in findings
         ]
+        # Secrets are redacted before anything is sent to the hosted LLM.
         user_msg = (
-            "MCP CONFIGURATION (parsed JSON):\n"
-            f"{json.dumps(config, indent=2)[:6000]}\n\n"
+            "MCP CONFIGURATION (parsed JSON, secrets redacted):\n"
+            f"{json.dumps(redact_secrets(config), indent=2)[:6000]}\n\n"
             "STATIC FINDINGS:\n"
             f"{json.dumps(compact_findings, indent=2)[:4000]}\n\n"
             "Respond with the JSON schema only."
@@ -407,7 +407,7 @@ def export_markdown(findings: list[dict], score: int, label: str, config: dict |
         for sev in SEVERITY_ORDER
     }
     lines = [
-        f"# MCP-Scanner Audit Report",
+        "# MCP-Scanner Audit Report",
         "",
         f"- **Configuration**: `{cfg_name}`",
         f"- **Generated**: {datetime.now().isoformat(timespec='seconds')}",
@@ -469,7 +469,7 @@ margin-top:.6rem;}.remediation li{color:#9CA3AF;margin-bottom:.25rem;}
         "<!DOCTYPE html><html><head><meta charset='utf-8'>",
         "<title>MCP-Scanner Audit Report</title>",
         f"<style>{css}</style></head><body>",
-        f"<h1>🛡 MCP-Scanner — Audit Report</h1>",
+        "<h1>🛡 MCP-Scanner — Audit Report</h1>",
         "<div class='card'>",
         f"<p><strong>Configuration:</strong> <code>{cfg_name}</code></p>",
         f"<p><strong>Generated:</strong> {datetime.now().isoformat(timespec='seconds')}</p>",
@@ -1323,8 +1323,8 @@ def render_input_panel(samples: dict) -> tuple[str, bool]:
 
     st.markdown("""
 <div class="pro-tip">
-  💡 <strong style="color:#67E8F9">Pro tip:</strong> The auditor runs seven scanners in parallel and
-  enriches findings with semantic analysis from Llama 3.3 70B. No GROQ_API_KEY?
+  💡 <strong style="color:#67E8F9">Pro tip:</strong> The auditor runs seven static scanners and
+  can optionally enrich findings with an LLM pass (Llama 3.3 70B via Groq). No GROQ_API_KEY?
   All static scanners still run — you just won't get the LLM tool-poisoning second pass.
 </div>
 """, unsafe_allow_html=True)

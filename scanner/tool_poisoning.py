@@ -127,7 +127,7 @@ def _check_tool(path: str, tool: dict) -> list[dict[str, Any]]:
                 "Require explicit user confirmation for any tool that accesses sensitive paths or env vars.",
                 "Report the upstream server publisher to the MCP registry.",
             ],
-            "_llm_assist": True,
+            "_llm_assist": False,  # set to True only if the LLM pass enriches it
         })
         return findings
 
@@ -159,7 +159,7 @@ def _check_tool(path: str, tool: dict) -> list[dict[str, Any]]:
                 "Reject any imperative verbs at registration time.",
                 "Enable strict mode in your MCP client to ignore description-level instructions.",
             ],
-            "_llm_assist": True,
+            "_llm_assist": False,  # set to True only if the LLM pass enriches it
         })
 
     # MEDIUM — abnormally long description (suspicious smuggling vehicle)

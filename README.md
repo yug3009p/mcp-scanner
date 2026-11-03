@@ -1,8 +1,8 @@
 # 🛡️ MCP-Scanner
 
-> **AI Agent Security Auditor** — paste an MCP server config, get a full
-> CVSS-scored audit mapped to OWASP LLM Top 10 and OWASP Agentic Top 10 in
-> under 5 seconds.
+> **AI Agent Security Auditor** — paste an MCP server config, get a
+> CVSS-scored audit mapped to OWASP LLM Top 10 and OWASP Agentic Top 10.
+> Seven deterministic scanners, plus an optional LLM pass.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
@@ -55,12 +55,12 @@ The defensive primitives we depend on for traditional software — code review, 
 | LLM | Llama 3.3 70B Versatile (via Groq) |
 | SDK | `groq` Python SDK |
 | Schema validation | Pydantic 2 |
-| Static analysis | Pure Python (`re`, `math`, AST walk) |
+| Static analysis | Pure Python (`re`, `math`, recursive JSON walk) |
 | Config | `python-dotenv` |
 | Standards | OWASP LLM Top 10 (2025), OWASP Agentic Top 10 (2025), CWE, CVSS 3.1 |
 | Language | Python 3.11+ |
 
-Groq's LPU inference delivers the full 70B-parameter analysis in sub-second latency, so the entire seven-scanner + LLM pass typically finishes in **2–5 seconds** for a config of 30–200 lines.
+Measured on the six bundled sample configs (Windows laptop, Python 3.11), the seven static scanners take **1–5 ms per config**. The optional Groq pass adds network and model latency, which depends on the provider and is not measured here.
 
 ---
 
@@ -208,13 +208,13 @@ The same config also triggers a separate finding for `get_forecast` (system-prom
 
 ## Metrics
 
-> **Scans MCP configs across 7 attack categories, generating CVSS-scored findings with OWASP mapping in under 5 seconds.**
+> **Scans MCP configs across 7 attack categories and produces CVSS-scored findings with OWASP and CWE mappings.**
 
 | Aspect | Result |
 |---|---|
-| Scanners | 7 deterministic + 1 LLM-assisted semantic pass |
-| Median scan time | < 5 s (static + LLM) |
-| Static-only mode | < 200 ms |
+| Scanners | 7 deterministic + 1 optional LLM-assisted semantic pass |
+| Static scan time | 1–5 ms per bundled sample config (measured, see above) |
+| Tests | pytest suite pinning the findings on every sample, run in CI |
 | Standards mapped per finding | OWASP LLM Top 10, OWASP Agentic Top 10, CWE |
 | Severity bands | Critical / High / Medium / Low (CVSS 3.1) |
 | Output formats | JSON · HTML · Markdown · in-app cards |
@@ -225,7 +225,7 @@ The same config also triggers a separate finding for `get_forecast` (system-prom
 ## Project Structure
 
 ```
-project-2-mcp-scanner/
+mcp-scanner/
 ├── app.py                          # Main Streamlit application
 ├── scanner/                        # Modular scanner package
 │   ├── __init__.py
@@ -244,11 +244,15 @@ project-2-mcp-scanner/
 │   ├── missing_auth_server.json
 │   ├── shadowed_tools.json
 │   └── secure_example.json
+├── tests/                          # pytest suite (scanners, CVSS, redaction)
 ├── reports/                        # Output reports (timestamped JSON)
 ├── screenshots/                    # README assets
+├── .github/workflows/ci.yml        # Lint + tests on every push / PR
 ├── requirements.txt
+├── requirements-dev.txt
 ├── .env.example
 ├── .gitignore
+├── SECURITY.md · CONTRIBUTING.md · CHANGELOG.md
 └── README.md
 ```
 

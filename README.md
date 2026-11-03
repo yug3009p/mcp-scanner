@@ -274,5 +274,5 @@ MIT License — see `LICENSE`.
 
 **Yug Mukesh Patel**
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/yug-patel-b9727226b/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/yugpatel9409/)
 [![GitHub](https://img.shields.io/badge/GitHub-yug3009p-181717?style=flat-square&logo=github)](https://github.com/yug3009p)

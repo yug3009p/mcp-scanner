@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 import re
 from typing import Any
+from scanner.ids import stable_hash
 
 # Provider-anchored regexes — each tuple is (label, regex, severity_hint)
 _KNOWN_PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
@@ -111,7 +112,7 @@ def _make_finding(
 ) -> dict[str, Any]:
     score_map = {"Critical": 9.8, "High": 8.6, "Medium": 6.5, "Low": 4.0}
     return {
-        "id": f"MCP-SEC-{abs(hash(location + value)) % 10000:04d}",
+        "id": f"MCP-SEC-{stable_hash(location + value):04d}",
         "scanner": "secrets_scanner",
         "category": "Hardcoded Secrets",
         "title": f"{label} hardcoded in `{location}`",
@@ -119,7 +120,7 @@ def _make_finding(
         "cvss_score": score_map.get(severity, 6.5),
         "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N",
         "owasp_llm": "LLM02:2025 — Sensitive Information Disclosure",
-        "owasp_agentic": "AAI07:2025 — Identity / Credential Compromise",
+        "owasp_agentic": "ASI03:2026 — Identity and Privilege Abuse",
         "cwe": "CWE-798: Use of Hard-coded Credentials",
         "component": location,
         "evidence": f"{label}: {_redact(value)} ({detection})",
@@ -190,6 +191,33 @@ def _check_value(
                 severity="High",
                 detection=f"entropy={_shannon_entropy(value):.2f}",
             ))
+
+    # Human-chosen passwords fail the entropy test, so password-like keys get their own check.
+    if _PASSWORD_KEY_NAMES.search(key_name) and _looks_like_literal_password(value):
+        already_flagged = any(f["component"] == location for f in findings)
+        if not already_flagged:
+            findings.append(_make_finding(
+                label="Plaintext password",
+                value=value,
+                location=location,
+                severity="High",
+                detection="password-like key name",
+            ))
+
+
+# No word boundaries, so PGPASSWORD, DB_PWD and admin_passphrase all match.
+_PASSWORD_KEY_NAMES = re.compile(r"(?i)(passw|pwd|passphrase)")
+
+
+def _looks_like_literal_password(value: str) -> bool:
+    """True for a value that could be a real password, not a reference to one."""
+    if len(value) < 6 or any(c.isspace() for c in value):
+        return False
+    if _ENV_VAR_NAME.fullmatch(value):  # e.g. "DB_PASSWORD": the name of a variable
+        return False
+    if value.startswith(("/", "~", "./", "../")) or re.match(r"[A-Za-z]:[\\/]", value):  # file path
+        return False
+    return "://" not in value  # URLs are handled by the connection-string pattern
 
 
 def scan_secrets(config: dict) -> list[dict[str, Any]]:

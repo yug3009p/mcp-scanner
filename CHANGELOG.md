@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Findings use the official OWASP Top 10 for Agentic Applications (2026) codes (ASI01-ASI05). The
+  previous `AAI` codes were not part of the published list. Permissions findings now map per
+  check: filesystem ASI03, network egress ASI02, shell execution ASI05. A test enforces valid codes.
+
+### Fixed
+- Finding IDs were built with Python's randomised `hash()`, so the same config got different IDs on
+  every run. IDs now come from a SHA-256 digest (`scanner/ids.py`) and are stable.
+- The secrets scanner missed human-chosen plaintext passwords (for example `PGPASSWORD`), which fail
+  the entropy check. Values under password-like keys are now flagged, skipping env-var names,
+  references, paths and placeholders. Passphrases containing spaces are still not flagged.
+
 ### Added
 - pytest suite: findings pinned per bundled sample, finding schema checks, secret redaction,
   robustness against malformed configs, and CVSS 3.1 reference scores.

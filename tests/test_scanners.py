@@ -1,4 +1,9 @@
 import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -20,7 +25,7 @@ SCANNERS = {
 EXPECTED = {
     "secure_example": {},
     "poisoned_tool_desc": {"tool_poisoning": 2, "sources": 1},
-    "leaked_secrets_config": {"prompt_injection": 3, "secrets": 6, "sources": 2},
+    "leaked_secrets_config": {"prompt_injection": 3, "secrets": 7, "sources": 2},
     "missing_auth_server": {"prompt_injection": 4, "authentication": 6, "sources": 3},
     "shadowed_tools": {"prompt_injection": 1, "authentication": 1, "shadowing": 2, "sources": 2},
     "vulnerable_filesystem_mcp": {"permissions": 2, "authentication": 2, "sources": 2},
@@ -75,7 +80,7 @@ def test_redaction_before_llm_hides_every_secret(load_sample):
     redacted = scanner.secrets_scanner.redact_secrets(config)
     text = json.dumps(redacted)
     assert scanner.scan_secrets(redacted) == []
-    # Not flagged by the scanner (no high entropy), but still must not leave the machine.
+    # Low-entropy plaintext password: must not leave the machine either.
     assert "Sup3rS3cr3tPgPass" not in text
     assert config != redacted  # original is not modified in place
     assert "Sup3rS3cr3tPgPass" in json.dumps(config)
@@ -110,3 +115,57 @@ def test_cvss_matches_reference_scores(metrics, score, severity):
     result = build_cvss(**metrics)
     assert result.base_score == score
     assert severity_from_score(score) == severity
+
+
+OFFICIAL_ASI = re.compile(
+    r"ASI(01:2026 — Agent Goal Hijack|02:2026 — Tool Misuse and Exploitation|"
+    r"03:2026 — Identity and Privilege Abuse|04:2026 — Agentic Supply Chain Vulnerabilities|"
+    r"05:2026 — Unexpected Code Execution|06:2026 — Memory and Context Poisoning|"
+    r"07:2026 — Insecure Inter-Agent Communication|08:2026 — Cascading Failures|"
+    r"09:2026 — Human-Agent Trust Exploitation|10:2026 — Rogue Agents)$"
+)
+
+
+@pytest.mark.parametrize("sample", sorted(EXPECTED))
+def test_owasp_agentic_codes_are_official(sample, load_sample):
+    # OWASP Top 10 for Agentic Applications (2026) uses ASI01-ASI10.
+    for found in run_all(load_sample(sample)).values():
+        for f in found:
+            assert OFFICIAL_ASI.match(f["owasp_agentic"]), f["owasp_agentic"]
+
+
+@pytest.mark.parametrize(
+    "key,value,flagged",
+    [
+        ("PGPASSWORD", "Sup3rS3cr3tPgPass!", True),
+        ("db_pwd", "hunter22", True),
+        ("password_env", "DB_PASSWORD", False),  # name of an env var
+        ("password", "${DB_PASS}", False),  # reference
+        ("password_file", "/run/secrets/db", False),  # path
+        ("password", "<your-password>", False),  # placeholder
+        ("description", "Sup3rS3cr3tPgPass!", False),  # not a password-like key
+    ],
+)
+def test_plaintext_password_detection(key, value, flagged):
+    found = scanner.scan_secrets({key: value})
+    assert bool(found) is flagged
+    if found:
+        assert value not in json.dumps(found)
+
+
+def test_finding_ids_are_stable_across_processes():
+    # Python's hash() is randomised per process; IDs must not depend on it.
+    code = (
+        "import json, sys; sys.path.insert(0, '.'); import scanner; "
+        "cfg = json.load(open('samples/missing_auth_server.json', encoding='utf-8')); "
+        "print(sorted(f['id'] for f in scanner.scan_authentication(cfg)))"
+    )
+    root = Path(__file__).resolve().parent.parent
+    outputs = {
+        subprocess.run(
+            [sys.executable, "-c", code], cwd=root, capture_output=True, text=True,
+            env={**os.environ, "PYTHONHASHSEED": seed}, check=True,
+        ).stdout
+        for seed in ("1", "2", "3")
+    }
+    assert len(outputs) == 1

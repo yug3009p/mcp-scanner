@@ -13,6 +13,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from scanner.cvss import cvss_for_profile
+from scanner.ids import stable_hash
 
 # Publishers / hosts considered first-party or audited
 _TRUSTED_PUBLISHERS = {
@@ -123,7 +124,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
             trusted = True
         if unpinned:
             return {
-                "id": f"MCP-SRC-{abs(hash(server_name + value)) % 10000:04d}",
+                "id": f"MCP-SRC-{stable_hash(server_name + value):04d}",
                 "scanner": "source_verification",
                 "category": "Unverified Server Source",
                 "title": f"`{server_name}` pulls `{value}` without a pinned version",
@@ -131,7 +132,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
                 "cvss_score": 7.4,
                 "cvss_vector": cvss_for_profile("unverified_source").vector,
                 "owasp_llm": "LLM03:2025 — Supply Chain",
-                "owasp_agentic": "AAI06:2025 — Supply-Chain Compromise",
+                "owasp_agentic": "ASI04:2026 — Agentic Supply Chain Vulnerabilities",
                 "cwe": "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
                 "component": f"mcpServers.{server_name}",
                 "evidence": f"{kind}:{value}",
@@ -153,7 +154,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
             }
         if not trusted:
             return {
-                "id": f"MCP-SRC-{abs(hash(server_name + value + 'pub')) % 10000:04d}",
+                "id": f"MCP-SRC-{stable_hash(server_name + value + 'pub'):04d}",
                 "scanner": "source_verification",
                 "category": "Unverified Server Source",
                 "title": f"`{server_name}` installs from unverified publisher `{value.split('/')[0]}`",
@@ -161,7 +162,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
                 "cvss_score": 6.1,
                 "cvss_vector": cvss_for_profile("unverified_source").vector,
                 "owasp_llm": "LLM03:2025 — Supply Chain",
-                "owasp_agentic": "AAI06:2025 — Supply-Chain Compromise",
+                "owasp_agentic": "ASI04:2026 — Agentic Supply Chain Vulnerabilities",
                 "cwe": "CWE-494: Download of Code Without Integrity Check",
                 "component": f"mcpServers.{server_name}",
                 "evidence": f"{kind}:{value}",
@@ -185,7 +186,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
         host = urlparse(value).netloc.lower()
         if host in _BLOCKLIST_HOSTS or any(host.endswith("." + b) for b in _BLOCKLIST_HOSTS if "." in b):
             return {
-                "id": f"MCP-SRC-BL-{abs(hash(server_name + value)) % 10000:04d}",
+                "id": f"MCP-SRC-BL-{stable_hash(server_name + value):04d}",
                 "scanner": "source_verification",
                 "category": "Unverified Server Source",
                 "title": f"`{server_name}` references known exfiltration host `{host}`",
@@ -193,7 +194,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
                 "cvss_score": 9.6,
                 "cvss_vector": cvss_for_profile("remote_code_execution").vector,
                 "owasp_llm": "LLM03:2025 — Supply Chain",
-                "owasp_agentic": "AAI06:2025 — Supply-Chain Compromise",
+                "owasp_agentic": "ASI04:2026 — Agentic Supply Chain Vulnerabilities",
                 "cwe": "CWE-829",
                 "component": f"mcpServers.{server_name}",
                 "evidence": value,
@@ -213,7 +214,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
         if host and host not in _TRUSTED_HOSTS:
             scheme = urlparse(value).scheme
             return {
-                "id": f"MCP-SRC-URL-{abs(hash(server_name + value)) % 10000:04d}",
+                "id": f"MCP-SRC-URL-{stable_hash(server_name + value):04d}",
                 "scanner": "source_verification",
                 "category": "Unverified Server Source",
                 "title": f"`{server_name}` fetches code from non-allowlisted host `{host}`",
@@ -221,7 +222,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
                 "cvss_score": 7.1 if scheme == "http" else 5.4,
                 "cvss_vector": cvss_for_profile("unverified_source").vector,
                 "owasp_llm": "LLM03:2025 — Supply Chain",
-                "owasp_agentic": "AAI06:2025 — Supply-Chain Compromise",
+                "owasp_agentic": "ASI04:2026 — Agentic Supply Chain Vulnerabilities",
                 "cwe": "CWE-494: Download of Code Without Integrity Check",
                 "component": f"mcpServers.{server_name}",
                 "evidence": value,
@@ -242,7 +243,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
 
     if kind == "pipe-to-shell":
         return {
-            "id": f"MCP-SRC-CURL-{abs(hash(server_name + value)) % 10000:04d}",
+            "id": f"MCP-SRC-CURL-{stable_hash(server_name + value):04d}",
             "scanner": "source_verification",
             "category": "Unverified Server Source",
             "title": f"`{server_name}` uses curl/wget-to-shell installation pattern",
@@ -250,7 +251,7 @@ def _check_origin(server_name: str, kind: str, value: str, server: dict) -> dict
             "cvss_score": 9.1,
             "cvss_vector": cvss_for_profile("remote_code_execution").vector,
             "owasp_llm": "LLM03:2025 — Supply Chain",
-            "owasp_agentic": "AAI06:2025 — Supply-Chain Compromise",
+            "owasp_agentic": "ASI04:2026 — Agentic Supply Chain Vulnerabilities",
             "cwe": "CWE-494",
             "component": f"mcpServers.{server_name}",
             "evidence": value[:120],

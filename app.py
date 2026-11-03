@@ -39,6 +39,7 @@ from scanner import (
     scan_tool_poisoning,
 )
 from scanner.secrets_scanner import redact_secrets
+from scanner.ids import stable_hash
 
 load_dotenv()
 
@@ -269,7 +270,7 @@ def enrich_with_llm(
             sev = item.get("severity", "Medium")
             score_map = {"Critical": 9.4, "High": 7.8, "Medium": 5.5, "Low": 3.0}
             findings.append({
-                "id": f"MCP-LLM-{abs(hash(item.get('title', ''))) % 10000:04d}",
+                "id": f"MCP-LLM-{stable_hash(item.get('title', '')):04d}",
                 "scanner": "llm_review",
                 "category": item.get("category", "Tool Poisoning"),
                 "title": item.get("title", "LLM-identified concern"),
@@ -277,7 +278,7 @@ def enrich_with_llm(
                 "cvss_score": score_map.get(sev, 5.5),
                 "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N",
                 "owasp_llm": "LLM01:2025 — Prompt Injection",
-                "owasp_agentic": "AAI04:2025 — Tool Misuse",
+                "owasp_agentic": "ASI04:2026 — Agentic Supply Chain Vulnerabilities",
                 "cwe": "CWE-77",
                 "component": item.get("component", "—"),
                 "evidence": "LLM semantic review",
@@ -1285,7 +1286,7 @@ def render_sidebar(samples: dict, history: list[dict]) -> dict[str, bool]:
             f'Provider: Groq Cloud<br>'
             f'API key: {"✅ configured" if api_key_set else "⚠ not set"}<br>'
             f'Mode: {"Static + LLM enrichment" if api_key_set else "Static scanners only"}<br>'
-            f'Standards: OWASP LLM Top 10 (2025), Agentic Top 10 (2025)<br>'
+            f'Standards: OWASP LLM Top 10 (2025), Agentic Top 10 (2026)<br>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -1531,7 +1532,7 @@ def render_footer() -> None:
     st.markdown("""
 <div class="mcp-footer">
   Powered by Llama 3.3 70B via Groq &nbsp;·&nbsp; Static scanners written in pure Python
-  &nbsp;·&nbsp; Aligned to OWASP LLM Top 10 (2025) &amp; OWASP Agentic Top 10 (2025)
+  &nbsp;·&nbsp; Aligned to OWASP LLM Top 10 (2025) &amp; OWASP Agentic Top 10 (2026)
   &nbsp;·&nbsp; Built by
   <a href="https://www.linkedin.com/in/yugpatel9409/" target="_blank">Yug Patel</a>
   &nbsp;·&nbsp;

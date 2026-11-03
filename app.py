@@ -3,7 +3,7 @@
 Streamlit application that audits Model Context Protocol (MCP) server
 configurations and AI-agent tool definitions against seven attack
 categories drawn from OWASP LLM Top 10 (2025) and OWASP Agentic Top 10
-(2025). Static scanners are deterministic; Groq Llama 3.3 70B optionally
+(2025). Static scanners are deterministic; an optional Groq-hosted LLM
 enriches findings with natural-language attack scenarios and remediation.
 """
 
@@ -52,7 +52,8 @@ REPORTS_DIR.mkdir(exist_ok=True)
 
 # ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+# Groq retires models over time, so the model is configurable. Set GROQ_MODEL in .env to override.
+GROQ_MODEL = os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b"
 
 SCANNERS: dict[str, dict[str, Any]] = {
     "prompt_injection": {
@@ -210,7 +211,7 @@ def enrich_with_llm(
     config: dict,
     findings: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[str]]:
-    """Optionally enrich + augment findings with Groq Llama 3.3 70B.
+    """Optionally enrich + augment findings with a Groq-hosted LLM (GROQ_MODEL).
 
     Returns (updated_findings, warnings). On any failure the original
     findings are returned unchanged and a warning is recorded.
@@ -240,7 +241,7 @@ def enrich_with_llm(
         )
         response = client.chat.completions.create(
             model=GROQ_MODEL,
-            max_tokens=2400,
+            max_tokens=4096,  # room for reasoning tokens as well as the JSON answer
             messages=[
                 {"role": "system", "content": LLM_SYSTEM_PROMPT},
                 {"role": "user", "content": user_msg},
@@ -1325,7 +1326,7 @@ def render_input_panel(samples: dict) -> tuple[str, bool]:
     st.markdown("""
 <div class="pro-tip">
   💡 <strong style="color:#67E8F9">Pro tip:</strong> The auditor runs seven static scanners and
-  can optionally enrich findings with an LLM pass (Llama 3.3 70B via Groq). No GROQ_API_KEY?
+  can optionally enrich findings with an LLM pass via Groq. No GROQ_API_KEY?
   All static scanners still run — you just won't get the LLM tool-poisoning second pass.
 </div>
 """, unsafe_allow_html=True)
@@ -1531,7 +1532,7 @@ def render_results_panel() -> None:
 def render_footer() -> None:
     st.markdown("""
 <div class="mcp-footer">
-  Powered by Llama 3.3 70B via Groq &nbsp;·&nbsp; Static scanners written in pure Python
+  Optional LLM pass via Groq &nbsp;·&nbsp; Static scanners written in pure Python
   &nbsp;·&nbsp; Aligned to OWASP LLM Top 10 (2025) &amp; OWASP Agentic Top 10 (2026)
   &nbsp;·&nbsp; Built by
   <a href="https://www.linkedin.com/in/yugpatel9409/" target="_blank">Yug Patel</a>

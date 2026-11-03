@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-llama--3.3--70b-F55036?style=flat-square)
+![Groq](https://img.shields.io/badge/Groq-gpt--oss--120b-F55036?style=flat-square)
 ![OWASP](https://img.shields.io/badge/OWASP-LLM%20Top%2010%20(2025)-000000?style=flat-square&logo=owasp&logoColor=white)
 ![OWASP Agentic](https://img.shields.io/badge/OWASP-Agentic%20Top%2010%20(2026)-7C3AED?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-10B981?style=flat-square)
@@ -43,7 +43,7 @@ By 2026, the AI-agent attack surface has moved from a research curiosity to a pr
 
 The defensive primitives we depend on for traditional software — code review, dependency pinning, least-privilege, secret scanning — exist for AI agents in principle but are rarely applied because the configs *look* harmless. An MCP client config is a 30-line JSON file. Nobody runs `npm audit` on it. Nobody checks whether the filesystem MCP server has been pointed at `/`.
 
-**MCP-Scanner is `npm audit` for AI-agent configurations.** It treats every MCP server, tool definition, and system prompt as untrusted input and audits it against seven attack classes drawn from **OWASP LLM Top 10 (2025)** and **OWASP Top 10 for Agentic Applications (2026)**. Each finding ships with a CVSS 3.1 score, OWASP and CWE mappings, an attack scenario in plain English, and concrete remediation steps. Static rules are deterministic; an optional Llama 3.3 70B pass via Groq adds semantic detection of tool poisoning that regex alone misses.
+**MCP-Scanner is `npm audit` for AI-agent configurations.** It treats every MCP server, tool definition, and system prompt as untrusted input and audits it against seven attack classes drawn from **OWASP LLM Top 10 (2025)** and **OWASP Top 10 for Agentic Applications (2026)**. Each finding ships with a CVSS 3.1 score, OWASP and CWE mappings, an attack scenario in plain English, and concrete remediation steps. Static rules are deterministic; an optional LLM pass via Groq adds semantic detection of tool poisoning that regex alone misses.
 
 ---
 
@@ -52,7 +52,7 @@ The defensive primitives we depend on for traditional software — code review, 
 | Layer | Technology |
 |---|---|
 | UI | Streamlit |
-| LLM | Llama 3.3 70B Versatile (via Groq) |
+| LLM | `openai/gpt-oss-120b` via Groq by default; set `GROQ_MODEL` to use another Groq model |
 | SDK | `groq` Python SDK |
 | Schema validation | Pydantic 2 |
 | Static analysis | Pure Python (`re`, `math`, recursive JSON walk) |

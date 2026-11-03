@@ -11,6 +11,8 @@ All notable changes to this project are documented here. The format follows
   check: filesystem ASI03, network egress ASI02, shell execution ASI05. A test enforces valid codes.
 
 ### Fixed
+- Groq retired `llama-3.3-70b-versatile`, so the optional LLM pass failed. The model is now
+  configurable (`GROQ_MODEL`, default `openai/gpt-oss-120b`, verified working).
 - Finding IDs were built with Python's randomised `hash()`, so the same config got different IDs on
   every run. IDs now come from a SHA-256 digest (`scanner/ids.py`) and are stable.
 - The secrets scanner missed human-chosen plaintext passwords (for example `PGPASSWORD`), which fail
